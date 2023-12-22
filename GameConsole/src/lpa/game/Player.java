@@ -1,0 +1,5 @@
+package lpa.game;
+
+public interface Player {
+    String name();
+}

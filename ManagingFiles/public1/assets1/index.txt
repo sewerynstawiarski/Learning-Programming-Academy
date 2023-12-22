@@ -1,0 +1,8 @@
+Directory Contents
+C:\Users\sewer\IdeaProjects\ManagingFiles\public1\assets1
+C:\Users\sewer\IdeaProjects\ManagingFiles\public1\assets1\icons1
+C:\Users\sewer\IdeaProjects\ManagingFiles\public1\assets1\icons1\index.txt
+C:\Users\sewer\IdeaProjects\ManagingFiles\public1\assets1\icons1\indexCopy.txt
+C:\Users\sewer\IdeaProjects\ManagingFiles\public1\assets1\index.txt
+C:\Users\sewer\IdeaProjects\ManagingFiles\public1\assets1\indexCopy.txt
+Generated: 2023-12-21T12:55:24.290095300
