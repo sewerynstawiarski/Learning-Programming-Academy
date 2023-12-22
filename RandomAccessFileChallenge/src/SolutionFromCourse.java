@@ -44,7 +44,7 @@ public class SolutionFromCourse {
                     ra.writeDouble(salary);
                     readRecord(ra, employeeId);
                 } catch (NumberFormatException ignore) {
-                    //ignoring
+                    //ignoring this 
                 }
             }
         } catch (IOException e) {
