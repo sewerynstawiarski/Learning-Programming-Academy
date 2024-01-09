@@ -54,7 +54,7 @@ public class Main {
 //            throw new RuntimeException(e);
 //        }
 
-        String urlString = "http://api.census.gov/data/2019/pep/charagegroups?get=NAME,POP&for=state:*";
+        String urlString = "https://api.census.gov/data/2019/pep/charagegroups?get=NAME,POP&for=state:*";
         URI uri = URI.create(urlString);
         try (BufferedInputStream bufferedInputStream =
                      new BufferedInputStream(uri.toURL().openStream())) {
