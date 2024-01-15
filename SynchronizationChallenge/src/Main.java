@@ -40,9 +40,9 @@ public class Main {
         Thread Consumer1 = new Thread(consumer);
         Thread Consumer2 = new Thread(consumer);
 
-        Producer.setName("Producer");
-        Consumer1.setName("Consumer1");
-        Consumer2.setName("Consumer2");
+        Producer.setName("\u001B[34mProducer");
+        Consumer1.setName("\u001B[31mConsumer1");
+        Consumer2.setName("\u001b[33mConsumer2");
 
         Producer.start();
         Consumer1.start();
