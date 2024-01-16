@@ -1,6 +1,8 @@
 package lpa;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -76,7 +78,7 @@ public class Main {
                 Stream.generate(Person::new)
                         .limit(10000)
                         .parallel()
-                        .collect(Collectors.groupingBy(Person::lastName, Collectors.counting()));
+                        .collect(Collectors.groupingByConcurrent(Person::lastName, Collectors.counting()));
 
         lastNameCounts.entrySet().forEach(System.out::println);
 
@@ -85,5 +87,24 @@ public class Main {
             total+= count;
         }
         System.out.println("Total = " + total) ;
+
+        System.out.println(lastNameCounts.getClass().getName());
+
+//        var lastCounts = new ConcurrentSkipListMap<String, Long>();
+        var lastCounts = Collections.synchronizedMap(new TreeMap<String, Long>());
+        Stream.generate(Person::new)
+                .limit(10000)
+                .parallel()
+                .forEach((person) -> lastCounts.merge(person.lastName(), 1L, Long::sum));
+
+        System.out.println(lastCounts);
+
+        total = 0;
+        for (long count : lastCounts.values()) {
+            total+= count;
+        }
+        System.out.println("Total = " + total) ;
+
+        System.out.println(lastCounts.getClass().getName());
     }
 }
