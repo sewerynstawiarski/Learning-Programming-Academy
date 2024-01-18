@@ -63,6 +63,6 @@ public class Main {
                 throw new RuntimeException(e);
             }
         }
-        executor.shutdown();
+        executor.shutdownNow();
     }
 }

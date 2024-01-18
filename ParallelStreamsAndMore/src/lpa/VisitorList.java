@@ -85,22 +85,22 @@ public class VisitorList {
 
         while (true) {
             try {
-                if (!producerExecutor.awaitTermination(20 , TimeUnit.SECONDS))
+                if (!producerExecutor.awaitTermination(20, TimeUnit.SECONDS))
                     break;
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
         }
-        producerExecutor.shutdown();
+        producerExecutor.shutdownNow();
 
         while (true) {
             try {
-                if (!consumerPool.awaitTermination(3, TimeUnit.SECONDS))
+                if (!consumerPool.awaitTermination(6, TimeUnit.SECONDS))
                     break;
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
         }
-        consumerPool.shutdown();
+        consumerPool.shutdownNow();
     }
 }
