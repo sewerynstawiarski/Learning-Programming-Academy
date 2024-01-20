@@ -59,8 +59,8 @@ public class VisitorList {
             System.out.println(threadName + " Polling queue " + newVisitors.size());
             Person visitor = null;
             try {
-//                visitor = newVisitors.poll(5, TimeUnit.SECONDS);
-                visitor = newVisitors.take();
+                visitor = newVisitors.poll(5, TimeUnit.SECONDS);
+//                visitor = newVisitors.take();
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -85,7 +85,7 @@ public class VisitorList {
 
         while (true) {
             try {
-                if (!producerExecutor.awaitTermination(20, TimeUnit.SECONDS))
+                if (!producerExecutor.awaitTermination(10, TimeUnit.SECONDS))
                     break;
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
@@ -95,7 +95,7 @@ public class VisitorList {
 
         while (true) {
             try {
-                if (!consumerPool.awaitTermination(6, TimeUnit.SECONDS))
+                if (!consumerPool.awaitTermination(3, TimeUnit.SECONDS))
                     break;
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);

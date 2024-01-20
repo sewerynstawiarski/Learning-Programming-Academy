@@ -69,7 +69,7 @@ public class VisitorListOfficial {
             if (visitor != null) {
                 System.out.println(threadName + " " + visitor);
                 if (!masterList.contains(visitor)) {
-                    masterList.add(visitor);
+//                    masterList.add(visitor);
                     System.out.println("--> New Visitor gets Coupon!: " + visitor);
                 }
             }
