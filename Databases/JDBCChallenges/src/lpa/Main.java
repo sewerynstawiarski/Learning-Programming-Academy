@@ -137,6 +137,7 @@ private static boolean checkSchema(Connection connection) throws SQLException {
 
         try(Statement statement = connection.createStatement()) {
             connection.setAutoCommit(false);
+
             int deletedRecords = statement.executeUpdate(childQuery);
             System.out.printf("%d child records deleted%n", deletedRecords);
             deletedRecords = statement.executeUpdate(parentQuery);
