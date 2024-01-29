@@ -23,7 +23,7 @@ public class ChallengeJDBC {
         ) {
 
 //        addingOrderWithDetails(connection, new String[] {"AKG k712 PRO", "Audio-technica ATH2020", "Austrian Audio HiX65"});
-            deletingOrderWithDetails(connection, 21);
+            deletingOrderWithDetails(connection, 45);
         } catch (SQLException e) {
             e.printStackTrace();
         }

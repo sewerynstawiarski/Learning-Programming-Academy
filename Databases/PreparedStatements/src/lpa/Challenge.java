@@ -25,12 +25,12 @@ public class Challenge {
 
         try(Connection connection = dataSource.getConnection(System.getenv("MYSQL_USER"), System.getenv("MYSQL_PASS"))) {
 //           addingNewColumn(connection, "quantity");
-            System.out.println("Number of added orders: " + addingOrderAndDetailsFromCSV(connection));
+            addingOrderAndDetailsFromCSV(connection);
 
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-
+        // official solution is in JDBCChallenges project under "Challenge2OfficialSolution" name
     }
     private static void addingNewColumn (Connection connection, String newColumn) {
         try (Statement statement = connection.createStatement()) {
@@ -42,36 +42,40 @@ public class Challenge {
             throw new RuntimeException(e);
         }
     }
-    private static int addingOrderAndDetailsFromCSV(Connection connection) throws SQLException {
+    private static void addingOrderAndDetailsFromCSV(Connection connection) throws SQLException {
 
         List<String> records = null;
+        List<List<String>> listOfRecords = new ArrayList<>();
         try {
             records = Files.readAllLines(Path.of("Orders.csv"));
             int indexStart = 0;
             int indexEND = 0;
-            List<List<String>> listOfRecords = new ArrayList<>();
+
             for (int i = 0; i < records.size(); i++) {
-                if (records.get(i).equals("order")) {
+                if (records.get(i).contains("order")) {
                     indexEND = i;
-                    if (indexStart != 0 && indexEND != 0) {
+                    if (indexEND != 0) {
                         listOfRecords.add(records.subList(indexStart, indexEND));
                     }
                     indexStart = i;
                 }
+                if (i == (records.size() -1)) {
+                    listOfRecords.add(records.subList(indexStart, i +1));
+                }
             }
+            listOfRecords.forEach(System.out::println);
 
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
         int orderID = 0;
-
-
-        try(PreparedStatement preparedStatementOrder = connection.prepareStatement(ADDING_ORDER_QUERY, Statement.RETURN_GENERATED_KEYS);
-        PreparedStatement preparedStatementDetails = connection.prepareStatement(ADDING_ORDER_DETAILS)) {
-
-
+        for (List<String> orderRecords : listOfRecords) {
+            try (PreparedStatement preparedStatementOrder = connection.prepareStatement(ADDING_ORDER_QUERY, Statement.RETURN_GENERATED_KEYS);
+                 PreparedStatement preparedStatementDetails = connection.prepareStatement(ADDING_ORDER_DETAILS)) {
                 connection.setAutoCommit(false);
-                for (String record : records) {
+
+                for (String record : orderRecords) {
                     String[] separatedRecord = record.split(",");
                     if (separatedRecord[0].equals("order")) {
                         preparedStatementOrder.setString(1, separatedRecord[1]);
@@ -89,14 +93,14 @@ public class Challenge {
                 }
 
                 int[] insertsDetails = preparedStatementDetails.executeBatch();
-                System.out.println("Details added =  " + insertsDetails.length);
+                System.out.println("Items added =  " + insertsDetails.length);
                 connection.commit();
                 connection.setAutoCommit(true);
+            } catch (SQLException e) {
+                connection.rollback();
+                e.printStackTrace();
+            }
 
-                return preparedStatementOrder.getUpdateCount();
-        } catch (SQLException e) {
-            connection.rollback();
-            throw new RuntimeException(e);
         }
     }
 }
