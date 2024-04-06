@@ -1,5 +1,6 @@
 package lpa;
 
+import com.mysql.cj.jdbc.CallableStatement;
 import com.mysql.cj.jdbc.MysqlDataSource;
 
 import java.io.IOException;
@@ -7,10 +8,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.sql.Types;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class CallableStatementChallenge implements toJSON {
+    //official solution will be included in JDBCChallanges project
     @Override
     public String toJSON() {
         return new StringJoiner(", ", "{", "}")
@@ -41,17 +47,37 @@ public class CallableStatementChallenge implements toJSON {
         dataSource.setDatabaseName("storefront");
 
 
-        Map<String, List<Item>> listOfDetails = CallableStatementChallenge.createListOfDetails();
+        Map<String, List<Item>> mapOfDetails = CallableStatementChallenge.createListOfDetails();
 
 
         try(Connection connection = dataSource.getConnection(System.getenv("MYSQL_USER"), System.getenv("MYSQL_PASS"))) {
-            StringJoiner json =  new StringJoiner(",", "[", "]");
-            listOfDetails.forEach((key, list) -> {
+            CallableStatement callableStatement = (CallableStatement) connection.prepareCall("CALL storefront.addOrder(?,?,?,?)");
+
+            mapOfDetails.forEach((key, list) -> {
+                StringJoiner json =  new StringJoiner(",", "[", "]");
                 list.forEach(item -> {
                     json.add(item.toJSON());
                 });
+                String jsonReady = json.toString();
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss");
+                LocalDateTime localDateTime = LocalDateTime.parse(key, formatter);
+                Timestamp timestamp = Timestamp.valueOf(localDateTime);
+
+                try {
+                    callableStatement.setTimestamp(1, timestamp);
+                    callableStatement.setString(2, jsonReady);
+                    callableStatement.registerOutParameter(3, Types.INTEGER);
+                    callableStatement.registerOutParameter(4, Types.INTEGER);
+                    callableStatement.execute();
+
+                    System.out.printf("Order ID: %d -> number of details: %d %n",
+                            callableStatement.getInt(3), callableStatement.getInt(4));
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+
             });
-            System.out.println(json);
+
 
         } catch (SQLException e) {
             throw new RuntimeException(e);

@@ -1,19 +1,26 @@
 package lpa;
 
+import com.mysql.cj.jdbc.CallableStatement;
 import com.mysql.cj.jdbc.MysqlDataSource;
 import com.mysql.cj.protocol.x.XProtocolRowInputStream;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Scanner;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.ResolverStyle;
+import java.util.*;
 
 record OrderDetail(int orderDetailId, String itemDescription, int qty) {
     public OrderDetail (String itemDescription, int qty) {
         this(-1, itemDescription, qty);
+    }
+    public String toJSON() {
+        return new StringJoiner(", ", "{", "}")
+                .add("\"itemDescription\":\"" + itemDescription + "\"")
+                .add("\"qty\":" + qty)
+                .toString();
     }
 }
 record Order(int orderId, String dateString, List<OrderDetail> details) {
@@ -23,6 +30,11 @@ record Order(int orderId, String dateString, List<OrderDetail> details) {
     public void addDetail(String itemDescription, int qty) {
         OrderDetail item = new OrderDetail(itemDescription, qty);
         details.add(item);
+    }
+    public String getDetailsJson() {
+        StringJoiner jsonString = new StringJoiner(", ", "[", "]");
+        details.forEach((d) -> jsonString.add(d.toJSON()));
+        return jsonString.toString();
     }
 }
 public class Challenge2OfficialSolution {
@@ -41,7 +53,28 @@ public class Challenge2OfficialSolution {
 //            Statement statement = connection.createStatement();
 //            statement.execute(alterString);
 
-            addOrders(connection, orders);
+//            addOrders(connection, orders);
+            CallableStatement cs = (CallableStatement) connection.prepareCall("CALL storefront.addOrder(?,?,?,?)");
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss");
+//                    .withResolverStyle(ResolverStyle.STRICT);
+
+
+            orders.forEach((o) ->{
+                    try {
+                        LocalDateTime localDateTime = LocalDateTime.parse(o.dateString(), formatter);
+                        Timestamp timestamp = Timestamp.valueOf(localDateTime);
+                        cs.setTimestamp(1, timestamp);
+                        cs.setString(2, o.getDetailsJson());
+                        cs.registerOutParameter(3, Types.INTEGER);
+                        cs.registerOutParameter(4, Types.INTEGER);
+                        cs.execute();
+                        System.out.printf("%d records inserted for %d (%s)%n",
+                                cs.getInt(4), cs.getInt(3), o.dateString());
+
+                    } catch (Exception e) {
+                        System.out.printf("Problem with %s : %s%n", o.dateString(), e.getMessage());
+                    }
+            });
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
