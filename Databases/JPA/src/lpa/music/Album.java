@@ -2,6 +2,8 @@ package lpa.music;
 
 import jakarta.persistence.*;
 
+import java.util.*;
+
 @Entity
 @Table(name = "albums")
 public class Album implements Comparable<Album>{
@@ -11,6 +13,9 @@ public class Album implements Comparable<Album>{
     private int albumId;
     @Column(name = "album_name")
     private String albumName;
+    @OneToMany
+    @JoinColumn(name = "album_id")
+    List<Song> albumSongs = new ArrayList<>();
 
     public Album() {
     }
@@ -32,11 +37,22 @@ public class Album implements Comparable<Album>{
         this.albumName = albumName;
     }
 
+    public List<Song> getAlbumSongs() {
+        return albumSongs;
+    }
+
     @Override
     public String toString() {
-        return "Album{" +
+        StringJoiner stringJoiner = new StringJoiner("\n");
+
+        Set<Song> sortedSongs = new TreeSet<>(albumSongs);
+
+        sortedSongs.forEach(s -> stringJoiner.add(s.toString()));
+
+        return "\nAlbum{" +
                 "albumId=" + albumId +
                 ", albumName='" + albumName + '\'' +
+                ", albumSongs='" +  "\n" + stringJoiner.toString() +
                 '}';
     }
 
