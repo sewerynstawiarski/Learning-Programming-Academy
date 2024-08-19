@@ -1,4 +1,4 @@
-package lpa.server;
+package lpa;
 
 import java.io.*;
 import java.net.HttpURLConnection;

@@ -1,4 +1,4 @@
-package lpa.server;
+package lpa;
 
 import java.io.IOException;
 import java.net.URI;
