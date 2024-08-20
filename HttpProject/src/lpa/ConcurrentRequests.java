@@ -1,5 +1,10 @@
 package lpa;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lpa.handlers.JsonBodyHandler;
+import lpa.handlers.ThreadSafeFileHandler;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -12,8 +17,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class ConcurrentRequests {
+    private static final Lock lock = new ReentrantLock();
     private static final Path POSTtest = Path.of("POSTtest.json");
 
     public static void main(String[] args) {
@@ -31,7 +39,7 @@ public class ConcurrentRequests {
         orderMap.forEach((k, v) -> sites.add(URI.create(urlBase + "?" + urlParams.formatted(k, v))));
 
         HttpClient client = HttpClient.newHttpClient();
-        sendGets(client, sites);
+//        sendGets(client, sites);
         if (!Files.exists(POSTtest)) {
             try {
                 Files.createFile(POSTtest);
@@ -40,7 +48,10 @@ public class ConcurrentRequests {
             }
         }
 
-        sendPosts(client, urlBase, urlParams, orderMap);
+//        sendPosts(client, urlBase, urlParams, orderMap);
+//        sendPostsSafeFileWrite(client, urlBase, urlParams, orderMap);
+//        sendPostsFileHandler(client, urlBase, urlParams, orderMap);
+        sendPostsGetJSON(client, urlBase, urlParams, orderMap);
     }
 
     private static void sendGets(HttpClient client, List<URI> uris) {
@@ -75,6 +86,20 @@ public class ConcurrentRequests {
             System.out.println(f.join().body());
         });
     }
+    private static void sendPostsFileHandler(HttpClient client, String baseUrl, String parameters, Map<String, Integer> orders) {
+        var handler = new ThreadSafeFileHandler(POSTtest);
+
+        var futures = orders.keySet().stream()
+                .map(key -> HttpRequest.newBuilder().POST(HttpRequest.BodyPublishers.ofString(parameters.formatted(key, orders.get(key)))))
+                .map(b -> b.uri(URI.create(baseUrl)))
+                .map(HttpRequest.Builder::build)
+                .map(request -> client.sendAsync(request, handler))
+                .toList();
+
+        var allFuturesRequests = CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0]));
+
+        allFuturesRequests.join();
+    }
     private static void sendPosts(HttpClient client, String baseURI, String paramString, Map<String, Integer> orders) {
         var futures = orders.entrySet().stream()
                 .map(e -> paramString.formatted(e.getKey(), e.getValue()))
@@ -100,5 +125,52 @@ public class ConcurrentRequests {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+    private static void writeToFile(String content) {
+        lock.lock();
+        try {
+            Files.writeString(POSTtest, content + "\r", StandardOpenOption.APPEND);
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        } finally {
+            lock.unlock();
+        }
+    }
+    private static void sendPostsSafeFileWrite(HttpClient client, String baseUrl, String parameters, Map<String, Integer> orders) {
+
+        var futures = orders.keySet().stream()
+                .map(key -> HttpRequest.newBuilder().POST(HttpRequest.BodyPublishers.ofString(parameters.formatted(key, orders.get(key)))))
+                .map(b -> b.uri(URI.create(baseUrl)))
+                .map(HttpRequest.Builder::build)
+                .map(request -> client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                        .thenAcceptAsync(r -> writeToFile(r.body())))
+                .toList();
+
+        var allFuturesRequests = CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0]));
+
+        allFuturesRequests.join();
+    }
+    private static void sendPostsGetJSON(HttpClient client, String baseURI, String paramString, Map<String, Integer> orders) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        var handler = JsonBodyHandler.create(objectMapper);
+        var futures = orders.entrySet().stream()
+                .map(e -> paramString.formatted(e.getKey(), e.getValue()))
+                .map(s -> HttpRequest.newBuilder(URI.create(baseURI)).POST(HttpRequest.BodyPublishers.ofString(s)))
+                .map(HttpRequest.Builder::build)
+                .map(request -> client.sendAsync(request, handler))
+                .toList();
+
+        var allFutureRequests = CompletableFuture.allOf(
+                futures.toArray(new CompletableFuture<?>[0])
+        );
+
+        allFutureRequests.join();
+
+        futures.forEach(f -> {
+            JsonNode node = f.join().body().get("order");
+            System.out.printf("Order ID:%s Expected Delivery: %s %n",
+                    node.get("orderId"),
+                    node.get("orderDeliveryDate").asText());
+        });
     }
 }
